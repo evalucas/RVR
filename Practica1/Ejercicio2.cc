@@ -9,7 +9,7 @@
 #include <iostream>
 
 /*
-*   ./miudp <dir, escucha> <puerto>
+*   ./time_server <dir, escucha> <puerto>
 */
 int main(int argc, char** argv)
 {
@@ -41,12 +41,12 @@ int main(int argc, char** argv)
 
     freeaddrinfo(res);
 
-    while(!false){
+    while(!exit){
 
         char buffer[80];
 
         char host[NI_MAXHOST];
-        char host[NI_MAXSERV];
+        char serv[NI_MAXSERV];
 
         struct sockaddr cliente;
         socklen_t clientelen = sizeof(struct sockaddr);
@@ -58,17 +58,42 @@ int main(int argc, char** argv)
 
         if(bytes == -1){
             return -1;
-        }
+        }   
 
-        
-
-        getnameinfo(i->ai_addr, i->ai_addrlen, host, NI_MAXHOST,
+        getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
         serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
 
-        std::cout << "Host: " host << " Port: " << serv << std::endl;
+        std::cout << bytes << "bytes de "<< host << " : " << serv << std::endl;
 
-        sendto(sd, buffer, bytes , 0, &cliente, clientelen);
-        
+
+        if(bytes == 2){
+            time_t t;
+            struct tm* tInfo;
+
+            time(&t);
+            tInfo = localtime(&t);
+
+            int len;
+
+            switch (buffer[0])
+            {
+                case 't':
+                    len = strftime(buffer, 79,"%r", tInfo);
+                    sendto(sd,buffer,len,0,&cliente,clientelen);
+                    break;
+                case 'd':
+                    len = strftime(buffer, 79,"%F", tInfo);
+                    sendto(sd,buffer,len,0,&cliente,clientelen);
+                    break;
+                case 'q':
+                    exit= true;                
+                    break;           
+                default:
+                    std::cout << "Comando no soportado " << buffer[0] << std::endl;
+                    break;
+            }
+        }
+
     }
     close(sd);
 
