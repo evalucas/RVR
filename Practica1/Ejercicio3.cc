@@ -15,6 +15,8 @@ int main(int argc, char** argv){
         return -1;
     }
 
+    char buffer[80];
+
     struct addrinfo hints;
     struct addrinfo * res;
 
@@ -36,5 +38,24 @@ int main(int argc, char** argv){
         std::cerr << "[socket]: creacion socket\n";
         return -1;
     }
+
+    int s = sendto(sd, argv[3], 2, 0, res->ai_addr, res->ai_addrlen);
+
+    if(s == -1){
+        return -1;
+    }
+
+    if(argv[3][0] == 't' || argv[3][0] == 'd'){
+        int bytes = recvfrom(sd, (void *) &buffer, 79, 0 ,res->ai_addr, &res->ai_addrlen);
+        if(bytes == -1) return -1;
+        buffer[bytes] = '\0';
+        std::cout << buffer << std::endl;
+    }
+
+
+    freeaddrinfo(res);
+    close(sd);
+
+    return 0;    
 
 }
