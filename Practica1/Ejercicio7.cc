@@ -19,9 +19,10 @@ public:
     Thread(int sd):_sd(sd){};
 
     void message(){
-        char buffer[80];
 
         while(true){
+            char buffer[80];
+
             int bytes = recv(_sd, (void *) &buffer, 79, 0);
 
             if(bytes <=0){
@@ -70,13 +71,15 @@ int main (int argc, char** argv){
 
     listen(sd,16);
 
-    char host[NI_MAXHOST];
-    char serv[NI_MAXSERV];
-
-    struct sockaddr cliente;
-    socklen_t clientelen = sizeof(struct sockaddr);
+    
 
     while(true){
+        char host[NI_MAXHOST];
+        char serv[NI_MAXSERV];
+
+        struct sockaddr cliente;
+        socklen_t clientelen = sizeof(struct sockaddr);
+        
         int client_sd = accept(sd,&cliente,&clientelen);
         
         getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
