@@ -8,6 +8,7 @@
 #include <iostream>
 #include <thread>
 #include <condition_variable>
+#define MAX_THREADS 5
 
 /*
 * ./echo_server_t <dir> <puerto>
@@ -87,29 +88,37 @@ int main (int argc, char** argv){
     listen(sd,16);
 
     while(true){
-    char host[NI_MAXHOST];
-    char serv[NI_MAXSERV];
+        char host[NI_MAXHOST];
+        char serv[NI_MAXSERV];
 
-    struct sockaddr cliente;
-    socklen_t clientelen = sizeof(struct sockaddr);
+        struct sockaddr cliente;
+        socklen_t clientelen = sizeof(struct sockaddr);
 
-    int client_sd = accept(sd,&cliente,&clientelen);
+        {
+            std::unique_lock<std::mutex> lck(num_mutex);
 
-    num_mutex.lock();
-    num_clientes--;
+            while(num_clientes >= MAX_THREADS){
+                std::cout << "Waiting for space... \n";
+                num_cv.wait(lck);
+            }
+        }
 
-    num_mutex.unlock();
-        
-    getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
-    serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        int client_sd = accept(sd,&cliente,&clientelen);
+            
+        getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
+        serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
 
-    std::cout << "Conexión desde " << host << " " << serv << std::endl;
+        std::cout << "Conexión desde " << host << " " << serv << std::endl;
 
-    Thread* t = new Thread(sd);
-    std::thread([&t](){
-        t->message();
-        delete t;
-    }).detach();
+        num_mutex.lock();
+        num_clientes--;
+
+        num_mutex.unlock();
+
+        Thread* t = new Thread(sd);
+        std::thread([&t](){
+            t->message();
+        }).detach();
 
     }
 
