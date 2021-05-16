@@ -25,7 +25,7 @@ int main(int argc, char** argv){
     memset((void *) &hints, 0, sizeof(struct addrinfo));
     
     hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_socktype = SOCK_STREAM;
 
     int rc = getaddrinfo(argv[1], argv[2], &hints, &res);
 
@@ -41,25 +41,28 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    int s = sendto(sd, argv[3], 2, 0, res->ai_addr, res->ai_addrlen);
-
-    if(s == -1){
-        return -1;
-    }
-
     int c = connect(sd, res->ai_addr, res->ai_addrlen);
 
     if(c == -1){
         return -1;
     }
 
-    while(!exit){
-        if(buffer[0] == 'Q'){
-            exit=true;
+    freeaddrinfo(res);
+
+    while(true){
+        std::cin>>buffer;
+        if(buffer[0] == 'Q' && buffer[1] == '\0')
+        {
+            break;
+        }
+        else{
+            send(sd,buffer,79,0);
+            int bytes = recv(sd,buffer,79,0);
+            buffer[bytes]= '\0';
+            std::cout << buffer << std::endl;
         }
     }
 
-    freeaddrinfo(res);
     close(sd);
 
     return 0;    
