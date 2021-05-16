@@ -7,10 +7,15 @@
 
 #include <iostream>
 #include <thread>
+#include <condition_variable>
 
 /*
 * ./echo_server_t <dir> <puerto>
 */
+
+std::condition_variable num_cv;
+std::mutex num_mutex;
+int num_clientes = 0;
 
 class Thread{
 private:
@@ -35,6 +40,16 @@ public:
 
         }
         close(_sd);
+
+        num_mutex.lock();
+        num_clientes--;
+
+        if(num_clientes < MAX_THREAD)
+        {
+            num_cv.notify_all();
+        }
+
+        num_mutex.unlock();
     }
 };
 
@@ -71,31 +86,34 @@ int main (int argc, char** argv){
 
     listen(sd,16);
 
-    
-
     while(true){
-        char host[NI_MAXHOST];
-        char serv[NI_MAXSERV];
+    char host[NI_MAXHOST];
+    char serv[NI_MAXSERV];
 
-        struct sockaddr cliente;
-        socklen_t clientelen = sizeof(struct sockaddr);
+    struct sockaddr cliente;
+    socklen_t clientelen = sizeof(struct sockaddr);
+
+    int client_sd = accept(sd,&cliente,&clientelen);
+
+    num_mutex.lock();
+    num_clientes--;
+
+    num_mutex.unlock();
         
-        int client_sd = accept(sd,&cliente,&clientelen);
-        
-        getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
-        serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+    getnameinfo(&cliente, clientelen, host, NI_MAXHOST,
+    serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
 
-        std::cout << "Conexión desde " << host << " " << serv << std::endl;
+    std::cout << "Conexión desde " << host << " " << serv << std::endl;
 
-        Thread* t = new Thread(sd);
-        std::thread([&t](){
-            t->message();
-            delete t;
-        }).detach();
+    Thread* t = new Thread(sd);
+    std::thread([&t](){
+        t->message();
+        delete t;
+    }).detach();
 
     }
 
     close(sd);
-    
+
     return 0;
 }
