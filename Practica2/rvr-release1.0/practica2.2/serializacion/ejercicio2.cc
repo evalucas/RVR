@@ -12,44 +12,47 @@
 class Jugador: public Serializable
 {
 public:
-    Jugador(const char * _n, int16_t _x, int16_t _y):x(_x),y(_y)
+    Jugador(const char * _n, int16_t _x, int16_t _y):pos_x(_x),pos_y(_y)
     {
-        strncpy(name, _n, 80);
+        strncpy(name, _n, MAX_NAME);
     };
 
     virtual ~Jugador(){};
 
     void to_bin()
     {
-        int32_t data_size = 80 * sizeof(char) + 2 *sizeof(int16_t);
+        int32_t data_size = MAX_NAME * sizeof(char) + 2 *sizeof(int16_t);
         alloc_data(data_size);
 
         char* tmp = _data;
-        memcpy(tmp, name, 80*sizeof(char));
-        tmp += 80* sizeof(char);
-        memcpy(tmp, &x, sizeof(int16_t));
+        memcpy(tmp, name, MAX_NAME*sizeof(char));
+        tmp += MAX_NAME* sizeof(char);
+        memcpy(tmp, &pos_x, sizeof(int16_t));
         tmp += sizeof(int16_t);
-        memcpy(tmp, &y, sizeof(int16_t));
+        memcpy(tmp, &pos_y, sizeof(int16_t));
     }
 
     int from_bin(char * data)
     {
         char* tmp = data;
-        memcpy(name,tmp, 80*sizeof(char));
-        tmp += 80* sizeof(char);
-        memcpy(&x, tmp, sizeof(int16_t));
+        memcpy(name,tmp, MAX_NAME*sizeof(char));
+        tmp += MAX_NAME* sizeof(char);
+        memcpy(&pos_x, tmp, sizeof(int16_t));
         tmp += sizeof(int16_t);
-        memcpy(&y, tmp, sizeof(int16_t));
+        memcpy(&pos_y, tmp, sizeof(int16_t));
 
         return 0;
     }
 
 
 public:
-    char name[80];
 
-    int16_t x;
-    int16_t y;
+    int16_t pos_x;
+    int16_t pos_y;
+
+    static const size_t MAX_NAME = 20;
+    char name[MAX_NAME];
+
 };
 
 int main(int argc, char **argv)
@@ -73,9 +76,9 @@ int main(int argc, char **argv)
 
     // 4. "Deserializar" en one_r
     one_r.from_bin(buffer);
-    free(buffer);
+    
     // 5. Mostrar el contenido de one_r
-    std::cout << one_r.name << " " <<  one_r.x << " " <<  one_r.y << std::endl;
+    std::cout << one_r.name << " " <<  one_r.pos_x << " " <<  one_r.pos_y << std::endl;
     
     return 0;
 }
