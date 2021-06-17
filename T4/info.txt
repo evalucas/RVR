@@ -1,0 +1,32 @@
+Usaremos la topología cliente+servidor. Hay dos jugadores, uno es el host (cliente+servidor) y el segundo es el cliente
+Bucle de una partida:
+
+-Ambas personas abren en su consola su programa (cliente o servidor) poniendo el puerto, el nickname, y lo que sea 
+-EL jugador 1 será el servidor+cliente. Este jugador decida a cuantas partidas se juega (mejor de 1, mejor de 3, mejor de 5, etcetcet o infinito)
+- Le da a play y espera a la confirmacion de que se haya conectado un cliente si aun no lo habia hecho
+-UNa vez se confirme que se han conectado todos los jugadores, el servidor envía el mensaje al cliente y muestra en ambas pantallas el juego
+
+JUGADOR X: Nickname servidor+cliente................................................ Jugador Circulo: Nickname cliente
+Puntos (partidas ganadas):...........................................................Puntos:
+
+..............................|  X  | 
+..............................|-----|----
+..............................|    
+..............................|
+..............................|
+..............................|
+ETCETCETC no pienso dibujarlo ahora
+
+-Identifica el turno que toca (que empieza siempre en el servidor)
+-El cliente actual espera la respuesta de cin en la que debe introducir un valor del 1 al 9 para elegir la posicion de la casilla
+-El cliente manda al servidor la respuesta del input
+-EL servidor evalua el input. 
+    -si es invalido, le pide al mismo cliente que lo repita
+    -si es valido y no puede meterlo, tambien le pide que lo repita
+    -si es valido y puede meterlo, lo hace y evalua la condicion de victoria 
+- SI el servidor determina que nadie ha ganado, se cambia al turno del siguiente cliente
+-UNa vez el servidor le ha indicado al cliente que puede hacer su turno, hace su turno ya descrito
+-Una vez se de una condicion de victoria en el servidor, este sumara un punto al ganador y si aun quedan partidas por jugar se reinicia el tablero y comienza el cliente+servidor
+-SI uno de los clientes se desconecta, se acaba la partida (se manda un mensaje de que se ha desconectado el cliente)
+
+SI nos vemos con fuerza y animos, metemos tambien un chat
