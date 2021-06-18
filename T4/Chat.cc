@@ -69,7 +69,7 @@ void ChatServer::do_messages()
 
         Socket *client = &socket;
 
-        socket.recv(msg,socket);
+        socket.recv(msg, socket);
         
         std::unique_ptr<Socket> cliente(client);
 
@@ -123,12 +123,12 @@ void ChatServer::input_thread(){
                 ChatMessage cmsg(nick,msg);
                 cmsg.type= ChatMessage::MESSAGE;
 
-                int m;
+                ChatMessage::MessageType m;
                 isValid(cmsg,m);
                 
                 switch (m)
                 {
-                case /* constant-expression */:
+                case 0:
                     /* code */
                     break;
                 
@@ -143,44 +143,44 @@ void ChatServer::input_thread(){
     }
 }
 
-bool ChatServer::isValid(ChatMessage cmsg, out MessageType m)
-{
-//Logica del juego
-
-    if((int)cmsg.message <10 && (int)cmsg.message > 0)
+bool ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType m) {
+    int m; /*= (int)cmsg.message;*/ //este parseo hay que hacerlo bien obv
+    if(m <10 && m > 0)
     {
-        if(casillas(cmsg.message)!=-1){
+        if(casillas[m]!=-1){
             //Casilla ocupada
             return false;
         }
         else{
             
-            if(cmsg.nick == nick) //Es tu nick, asi que eres el servidor
+            if(msg.nick == nick) //Es tu nick, asi que eres el servidor
             {
-                //casillas[cmsg.message-1] = 0;
+                casillas[m] = 0;
 
             }
-            else
-                //casillas[cmsg.message-1] = 1;
+            else{
+                casillas[m] = 1;
             }
             m = winner();
 
             return true;
         }
+      
     }
-    else{
-        //Introduce un numero del 1-9
-        return false;
-    }
-    
+    return false; 
+}  
 
-    //Array de -1, 0 y 1 para saber como va la partida
-    // -1 libre, 0 y 1 para cada jugador
-
-}
-
-MessageType ChatServer::winner(){
+ChatMessage::MessageType ChatServer::winner(){
     //-1 0 1 2
+    int res; // -1 continuar; >-1 finalizar (0 empate, 1 gana J1, 2 gana J2)
+    //comprueba filas
+    for(int i = 0 ; i < 3 ; i++){
+        
+        //int value = casilla
+    }
+    //comprueba columnas
+
+    //comprueba diagonales
 }
 
 // -----------------------------------------------------------------------------

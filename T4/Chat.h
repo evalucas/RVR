@@ -84,8 +84,8 @@ public:
 
     void input_thread();
 
-    bool isValid(ChatMessage cmsg, out MessageType m);
-    MessageType winner();
+    bool isValid(ChatMessage cmsg, ChatMessage::MessageType m);
+    ChatMessage::MessageType winner();
 
     //void closeServer();
 
