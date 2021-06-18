@@ -33,7 +33,18 @@ public:
     {
         LOGIN   = 0,
         MESSAGE = 1,
-        LOGOUT  = 2
+        LOGOUT  = 2,
+
+        GANA1   = 3,
+        GANA2   = 4,
+        EMPATE  = 5,
+        ENCURSO = 6,
+        
+        INVALIDO= 7,
+        OCUPADO = 8
+
+        //
+        //Tipos de mensaje para el juego
     };
 
     ChatMessage(){};
@@ -57,18 +68,26 @@ public:
  *  Clase para el servidor de chat
  */
 class ChatServer
-{
+{//Servidor-Cliente
 public:
-    ChatServer(const char * s, const char * p): socket(s, p)
-    {
-        socket.bind();
-    };
+    ChatServer(const char * s, const char * p, const char * n): socket(s, p),
+        nick(n){};
+    // {
+    //     // socket.bind();
+    // };
 
     /**
      *  Thread principal del servidor recive mensajes en el socket y
      *  lo distribuye a los clientes. Mantiene actualizada la lista de clientes
      */
     void do_messages();
+
+    void input_thread();
+
+    bool isValid(ChatMessage cmsg, out MessageType m);
+    MessageType winner();
+
+    //void closeServer();
 
 private:
     /**
@@ -81,6 +100,13 @@ private:
      * Socket del servidor
      */
     Socket socket;
+        /**
+     * Nick del usuario
+     */
+    std::string nick;
+    bool turn = true;
+    bool connect = false;
+    std::vector<int> casillas;
 };
 
 // -----------------------------------------------------------------------------
@@ -133,5 +159,6 @@ private:
      * Nick del usuario
      */
     std::string nick;
+    bool turn = false;
 };
 

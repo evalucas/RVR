@@ -75,13 +75,14 @@ void ChatServer::do_messages()
 
         switch (msg.type)
         {
-        case 0:
+        case 0: //LOGIN
             clients.push_back(std::move(cliente));
             std::cout << msg.nick << " conectado" << std::endl;
+            connect = true;
             break;
         
-        case 1:
-            
+        case 1: //MESSAGE
+            //Comprobar si es valido...
             for(auto it= clients.begin(); it!= clients.end(); ++it)
             {
                 if(!(**it==*cliente)){
@@ -90,7 +91,7 @@ void ChatServer::do_messages()
             }
             break;
 
-        case 2:
+        case 2: //LOGOUT
 
             for(auto it= clients.begin(); it!= clients.end(); ++it)
             {
@@ -106,6 +107,80 @@ void ChatServer::do_messages()
             break;
         }
     }
+}
+
+void ChatServer::input_thread(){
+    while (true)
+    {
+        while(turn)
+        {
+            if(connect){ 
+                // Leer stdin con std::getline
+                // Enviar al servidor usando socket
+                std::string msg;
+                std::getline(std::cin,msg);
+
+                ChatMessage cmsg(nick,msg);
+                cmsg.type= ChatMessage::MESSAGE;
+
+                int m;
+                isValid(cmsg,m);
+                
+                switch (m)
+                {
+                case /* constant-expression */:
+                    /* code */
+                    break;
+                
+                default:
+                    break;
+                }
+
+                socket.send(cmsg,socket);
+            }
+           
+        }
+    }
+}
+
+bool ChatServer::isValid(ChatMessage cmsg, out MessageType m)
+{
+//Logica del juego
+
+    if((int)cmsg.message <10 && (int)cmsg.message > 0)
+    {
+        if(casillas(cmsg.message)!=-1){
+            //Casilla ocupada
+            return false;
+        }
+        else{
+            
+            if(cmsg.nick == nick) //Es tu nick, asi que eres el servidor
+            {
+                //casillas[cmsg.message-1] = 0;
+
+            }
+            else
+                //casillas[cmsg.message-1] = 1;
+            }
+            m = winner();
+
+            return true;
+        }
+    }
+    else{
+        //Introduce un numero del 1-9
+        return false;
+    }
+    
+
+    //Array de -1, 0 y 1 para saber como va la partida
+    // -1 libre, 0 y 1 para cada jugador
+
+}
+
+MessageType ChatServer::winner(){
+    //-1 0 1 2
 }
 
 // -----------------------------------------------------------------------------
@@ -136,6 +211,8 @@ void ChatClient::input_thread()
 {
     while (true)
     {
+        //Enviar la accion
+
         // Leer stdin con std::getline
         // Enviar al servidor usando socket
         std::string msg;
@@ -149,6 +226,7 @@ void ChatClient::input_thread()
 
 void ChatClient::net_thread()
 {
+    //Recibir el Tablero (render)
     while(true)
     {
         //Recibir Mensajes de red
