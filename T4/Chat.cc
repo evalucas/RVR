@@ -126,17 +126,16 @@ void ChatServer::input_thread(){
                     switch (res)
                     {
                         case ChatMessage::MessageType::INVALIDO:
-                            std::cout<<"INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: 0 (infinitas rondas), 1, 3, 5" << std::endl;
+                            std::cout<<"INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: -1 (infinitas rondas), 1, 3, 5" << std::endl;
                             break;
                         default:
                             started = true;
                             //renderiza en el jugador 1 (servidor) el primer tablero
                             std::string tablero = renderGame(); std::string UI = renderUI();
-                            std::cout<<UI+'\n'<<tablero <<std::endl;
+                            std::cout<<UI<<tablero <<std::endl;
                             //enviar al cliente el primer tablero
-                            cmsg.message = UI + "\n" + tablero;
+                            cmsg.message = UI + tablero;
                             cmsg.type = ChatMessage::MessageType::MESSAGE;
-                            socket.send(cmsg,*clients[0].get());
                             break;
                     }
                 }
@@ -173,7 +172,7 @@ void ChatServer::input_thread(){
                             break;
                         }   
                 }
-                socket.send(cmsg,socket);
+                socket.send(cmsg,*clients[0].get());
             }
            
         }
@@ -189,7 +188,7 @@ void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
     int i = std::atoi(buffer);
     
     if(!started){
-        if(i == 0 || i == 1 || i==3 || i == 5 ){
+        if(i == -1 || i == 1 || i==3 || i == 5 ){
             contadorRonda = i;
         }
         else{
@@ -206,19 +205,56 @@ void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
                 casillas[i] = 0;
             else
                 casillas[i] = 1;   
-            m = winner(); //Comprueba el estado del tablero y guarda el mensaje a enviar al cliente
+            
+            if(contadorTurno >3){     //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
+                m = winner(); //Comprueba el estado del tablero y guarda el mensaje a enviar al cliente
+                endGame(m);
+            }
+            else{m=ChatMessage::MessageType::ENCURSO;}
+            
      
         }
     }
  
 }  
 
+void ChatServer::endGame(ChatMessage::MessageType t){
+    switch (t)
+    {
+    case ChatMessage::MessageType::GANA1 :
+        puntos1++; contadorRonda--; contadorTurno=0; turn=true;
+        break;
+    case ChatMessage::MessageType::GANA2 :
+        puntos2++; contadorRonda--; contadorTurno=0; turn=true;
+    break;
+    case ChatMessage::MessageType::EMPATE :
+        puntos1++; puntos2++; contadorRonda--; contadorTurno=0; turn=true;
+    break;
+    default:
+        break;
+    }
+
+    if(contadorRonda == 0){started=false; }
+}
+
 std::string ChatServer::renderUI(){
     //RENDERIZAR UI (turno actual, puntos de cada jugador, nicknames)
     std::string UI;
+    std::string ronda;
+    if(contadorRonda < 0) ronda = "infinitas";
+    else ronda = contadorRonda;
+
+    UI = nick + ": "; 
+    UI+= puntos1 + " ----- " + clientNick + ": " ;
+    UI+= puntos2 + '\n' + "Turno: ";
+    UI+= contadorTurno + '\n' + "Rondas Restantes: " + ronda + '\n' + '\n';
     
-    return UI;
+    return UI;  
 }
+
+//'nick1': 0 ----- 'nick2': 0
+//Turno: '0'
+//Rondas Restantes: '0'
 
 // _|O|X
 // _|_|_
@@ -240,40 +276,35 @@ std::string ChatServer::renderGame(){ //No se si esto tiene que estar aqui o en 
 }
 ChatMessage::MessageType ChatServer::winner(){
 
-    //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
-    if(contadorTurno>3){ 
-        //comprueba filas
-        for(int i = 0 ; i < 3 ; i++){       
-            if(casillas[i]==casillas[i+1] && casillas[i+1]==casillas[i+2] ){
-                if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
-                else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
-            }              
-        
+    //comprueba filas
+    for(int i = 0 ; i < 3 ; i++){       
+        if(casillas[i]==casillas[i+1] && casillas[i+1]==casillas[i+2] ){
+            if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
+            else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
         }
-        //comprueba columnas
-        for(int i = 0 ; i < 3 ; i++){
-            if(casillas[i]==casillas[i+3] && casillas[i+3]==casillas[i+6] ){
-                if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
-                else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
-            } 
-        }
-        //comprueba diagonales
-        if(casillas[0]==casillas[4] && casillas[4]==casillas[8]){
-            if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
-            else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
-        }
-        if(casillas[3]==casillas[4] && casillas[4]==casillas[6]){
-            if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
-            else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
-        }
-        //comprueba que el tablero esté lleno o no
-        for(int i=0; i<9;i++){
-            if(casillas[i]==-1) return ChatMessage::MessageType::ENCURSO;
-        }
-
-        return ChatMessage::MessageType::EMPATE;
     }
-    else return ChatMessage::MessageType::ENCURSO;
+    //comprueba columnas
+    for(int i = 0 ; i < 3 ; i++){
+        if(casillas[i]==casillas[i+3] && casillas[i+3]==casillas[i+6] ){
+            if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
+            else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
+        } 
+    }
+    //comprueba diagonales
+    if(casillas[0]==casillas[4] && casillas[4]==casillas[8]){
+        if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
+        else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
+    }
+    if(casillas[3]==casillas[4] && casillas[4]==casillas[6]){
+        if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
+        else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
+    }
+    //comprueba que el tablero esté lleno o no
+    for(int i=0; i<9;i++){
+        if(casillas[i]==-1) return ChatMessage::MessageType::ENCURSO;
+    }
+
+    return ChatMessage::MessageType::EMPATE;   
     
 }
 // -----------------------------------------------------------------------------
@@ -337,7 +368,7 @@ void ChatClient::net_thread()
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) turn = false;
                 break;
             }
-            socket.send(cmsg,socket);
+        socket.send(cmsg,socket);
     }
 
 

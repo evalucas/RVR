@@ -88,6 +88,7 @@ public:
     ChatMessage::MessageType winner();
     std::string renderGame();
     std::string ChatServer::renderUI();
+    void endGame(ChatMessage::MessageType t);
 
     //void closeServer();
 
@@ -113,6 +114,8 @@ private:
     std::vector<int> casillas;
     int contadorTurno = 0;
     int contadorRonda = 0;
+    int puntos1=0;
+    int puntos2=0;
 
     
 };
