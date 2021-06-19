@@ -170,18 +170,66 @@ bool ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType m) {
     return false; 
 }  
 
+std::string ChatServer::renderGame(){ //No se si esto tiene que estar aqui o en client
+    
+    std::string tablero;
+    for(int i=0; i<3;i++){
+        for(int j=0; j<3;j++){
+            if(casillas[j+i]==0) tablero.push_back('X');
+            else if(casillas[j+i]==1) tablero.push_back('O');
+            else tablero.push_back('_');
+
+            if(j==0 || j==1) tablero.push_back('|');
+        }
+        tablero.push_back('/n');
+    }
+
+    return tablero;
+}
+
+// _|O|X
+// _|_|_
+// O|_|X
+
 ChatMessage::MessageType ChatServer::winner(){
     //-1 0 1 2
-    int res; // -1 continuar; >-1 finalizar (0 empate, 1 gana J1, 2 gana J2)
+      // -1 continuar; >-1 finalizar (0 empate, 1 gana J1, 2 gana J2)
     //comprueba filas
-    for(int i = 0 ; i < 3 ; i++){
+    for(int i = 0 ; i < 3 ; i++){       
+        if(casillas[i]==casillas[i+1] && casillas[i+1]==casillas[i+2] ){
+            if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
+            else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
+        }              
         
-        //int value = casilla
     }
+
     //comprueba columnas
+    for(int i = 0 ; i < 3 ; i++){
+        if(casillas[i]==casillas[i+3] && casillas[i+3]==casillas[i+6] ){
+            if(casillas[i]==0) return ChatMessage::MessageType::GANA1;
+            else if(casillas[i]==1) return ChatMessage::MessageType::GANA2; 
+        } 
+    }
 
     //comprueba diagonales
+    if(casillas[0]==casillas[4] && casillas[4]==casillas[8]){
+        if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
+        else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
+    }
+
+    if(casillas[3]==casillas[4] && casillas[4]==casillas[6]){
+        if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
+        else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
+    }
+
+    for(int i=0; i<9;i++){
+        if(casillas[i]==-1) return ChatMessage::MessageType::ENCURSO;
+    }
+
+    return ChatMessage::MessageType::EMPATE;
 }
+
+
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------

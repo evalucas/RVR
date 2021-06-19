@@ -86,6 +86,7 @@ public:
 
     bool isValid(ChatMessage cmsg, ChatMessage::MessageType m);
     ChatMessage::MessageType winner();
+    std::string renderGame();
 
     //void closeServer();
 
@@ -107,6 +108,8 @@ private:
     bool turn = true;
     bool connect = false;
     std::vector<int> casillas;
+    int contador=0;
+    
 };
 
 // -----------------------------------------------------------------------------
