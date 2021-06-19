@@ -84,9 +84,10 @@ public:
 
     void input_thread();
 
-    bool isValid(ChatMessage cmsg, ChatMessage::MessageType m);
+    void isValid(ChatMessage cmsg, ChatMessage::MessageType &m);
     ChatMessage::MessageType winner();
     std::string renderGame();
+    std::string ChatServer::renderUI();
 
     //void closeServer();
 
@@ -105,10 +106,14 @@ private:
      * Nick del usuario
      */
     std::string nick;
+    std::string clientNick;
     bool turn = true;
     bool connect = false;
+    bool started = false;
     std::vector<int> casillas;
-    int contador=0;
+    int contadorTurno = 0;
+    int contadorRonda = 0;
+
     
 };
 
