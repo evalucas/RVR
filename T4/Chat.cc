@@ -54,55 +54,18 @@ void ChatServer::do_messages()
 {
     while (true)
     {
-        /*
-         * NOTA: los clientes están definidos con "smart pointers", es necesario
-         * crear un unique_ptr con el objeto socket recibido y usar std::move
-         * para añadirlo al vector
-         */
-
-        //Recibir Mensajes en y en función del tipo de mensaje
-        // - LOGIN: Añadir al vector clients
-        // - LOGOUT: Eliminar del vector clients
-        // - MESSAGE: Reenviar el mensaje a todos los clientes (menos el emisor)
-        
         ChatMessage cmsg;
-
         Socket *client;
-
         socket.recv(cmsg,client);
-        
         std::unique_ptr<Socket> cliente(client);
-
-        std::string tablero;
-        std::string UI;
-
-        switch (cmsg.type)
-        {
-        case ChatMessage::MessageType::LOGIN: //LOGIN
+        if(clients.size() == 0){ //si no ha añadido ningún cliente aún, se trata de la primera conexión. Guardamos la información del cliente en dicho caso.
             clients.push_back(std::move(cliente));
             clientNick = cmsg.nick;
-            std::cout << cmsg.nick << " conectado. Empezando partida..." << std::endl;
-            if(nick == cmsg.nick) nick.push_back('_'); //si ambos se llaman igual, modificamos el nombre internamente
-            //configurar partida
-            std::cout<<"A cuantas rondas quieres hacer la partida? 1,3,5, 0 (infinito)"<<std::endl;
-            //comunica al cliente que se esta configurando la partida
-            cmsg.message = nick + " está configurando la partida, espera...";
-            cmsg.type = ChatMessage::MessageType::MESSAGE;
-            socket.send(cmsg,*cliente);  
-            connect = true;
-            break;
-        case ChatMessage::MessageType::LOGOUT: //LOGOUT
-            std::cout << cmsg.nick << " desconectado" << std::endl;
-            break;
-        default:
-            ChatMessage::MessageType res;
-            //comprobamos que el input sea válido
-            isValid(cmsg,res);
-            cmsg.type = res;
-            if(res == ChatMessage::MessageType::INVALIDO) cmsg.message = "INSERTA UNA CASILLA DEL 1 AL 9 PARA METER TU FICHA" ;
-            socket.send(cmsg,*cliente); 
-            break;
         }
+        createMessage(cmsg);
+        std::cout << cmsg.message << std::endl;
+        socket.send(cmsg,*clients[0].get());
+        
     }
 }
 
@@ -118,61 +81,13 @@ void ChatServer::input_thread(){
                 //Creamos un mensaje con el input recibido
                 ChatMessage cmsg(nick,msg);
                 cmsg.type= ChatMessage::MESSAGE; //default
-                ChatMessage::MessageType res;
                 //comprobamos que el input sea válido
-                isValid(cmsg,res);
-                //comprobamos si la partida ha comenzado o no para configurar la partida o leer inputs de partida
-                if(!started){
-                    switch (res)
-                    {
-                        case ChatMessage::MessageType::INVALIDO:
-                            std::cout<<"INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: -1 (infinitas rondas), 1, 3, 5" << std::endl;
-                            break;
-                        default:
-                            started = true;
-                            //renderiza en el jugador 1 (servidor) el primer tablero
-                            std::string tablero = renderGame(); std::string UI = renderUI();
-                            std::cout<<UI<<tablero <<std::endl;
-                            //enviar al cliente el primer tablero
-                            cmsg.message = UI + tablero;
-                            cmsg.type = ChatMessage::MessageType::MESSAGE;
-                            break;
-                    }
-                }
-                else{
+                isValid(cmsg,cmsg.type);
                 //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
-                    switch (res)
-                        {
-                        case ChatMessage::MessageType::INVALIDO :
-                            std::cout<<"INSERTA UNA CASILLA DEL 1 AL 9 PARA METER TU FICHA" << std::endl;
-                            break;
-                        case ChatMessage::MessageType::GANA1 :
-                            cmsg.type = res;
-                            cmsg.message = "Ha ganado "+nick;
-                            std::cout<< cmsg.message <<std::endl;
-                            break;
-                        case ChatMessage::MessageType::GANA2 :
-                            cmsg.type = res;
-                            cmsg.message = "Ha ganado "+clientNick;
-                            std::cout<<cmsg.message <<std::endl;
-                            break;
-                        case ChatMessage::MessageType::EMPATE :
-                            cmsg.type = res;
-                            cmsg.message = "EMPATE";
-                            std::cout<<cmsg.message <<std::endl;
-                            break;
-                        case ChatMessage::MessageType::ENCURSO :
-                            cmsg.type = res;   
-                            cmsg.message = renderUI() + renderGame();
-                            std::cout<<cmsg.message<<std::endl;
-                            turn = false;
-                            contadorTurno++;
-                            break;
-                        default:
-                            break;
-                        }   
-                }
-                socket.send(cmsg,*clients[0].get());
+                createMessage(cmsg);
+                std::cout << cmsg.message << std::endl;
+                if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
+                    socket.send(cmsg,*clients[0].get());
             }
            
         }
@@ -180,7 +95,56 @@ void ChatServer::input_thread(){
 }
 
 //LÓGICA DEL JUEGO
-
+void ChatServer::createMessage(ChatMessage cmsg){
+    switch (cmsg.type)
+        {
+            case ChatMessage::MessageType::INVALIDO :
+                if(started)cmsg.message = "INSERTA UNA CASILLA DEL 1 AL 9 PARA METER TU FICHA";
+                else cmsg.message = "INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: -1 (infinitas rondas), 1, 3, 5";
+                break;
+            case ChatMessage::MessageType::GANA1 :
+                cmsg.message = "Ha ganado "+nick;
+                break;
+            case ChatMessage::MessageType::GANA2 :
+                cmsg.message = "Ha ganado "+clientNick;
+                break;
+            case ChatMessage::MessageType::EMPATE :
+                cmsg.message = "EMPATE";
+                break;
+            case ChatMessage::MessageType::ENCURSO :   
+                cmsg.message = renderUI() + renderGame();
+                turn = false;
+                contadorTurno++;
+                break;
+            case ChatMessage::MessageType::LOGIN: 
+                std::cout << cmsg.nick << " conectado. Empezando partida..." << std::endl;
+                if(nick == cmsg.nick) nick.push_back('_'); //si ambos se llaman igual, modificamos el nombre internamente
+                //configurar partida
+                std::cout<<"A cuantas rondas quieres hacer la partida? 1,3,5, 0 (infinito)"<<std::endl;
+                //comunica al cliente que se esta configurando la partida
+                cmsg.message = nick + " está configurando la partida, espera...";
+                cmsg.type = ChatMessage::MessageType::MESSAGE;
+                connect = true;
+                break;
+            case ChatMessage::MessageType::LOGOUT: 
+                std::cout << cmsg.nick << " desconectado" << std::endl;
+                break;
+            default:
+                if(!started){ //este mensaje es del servidor
+                    started = true;
+                    //enviar al cliente el primer tablero
+                    cmsg.message = renderUI() + renderGame();
+                    cmsg.type = ChatMessage::MessageType::MESSAGE;
+                }
+                else{ //en este caso, está recibiendo cualquier tipo de input del cliente.
+                    //comprobamos que el input sea válido
+                    isValid(cmsg,cmsg.type);
+                    //volvemos a crear un mensaje para enviar al cliente/mostrar en pantalla del servidor.
+                    createMessage(cmsg);
+                }
+                break;
+        }   
+}
 
 void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
     
@@ -234,7 +198,11 @@ void ChatServer::endGame(ChatMessage::MessageType t){
         break;
     }
 
-    if(contadorRonda == 0){started=false; }
+    if(contadorRonda == 0){
+        started=false; 
+        for(int i = 0 ; i<9;i++)
+            casillas[i]=-1;
+    }
 }
 
 std::string ChatServer::renderUI(){
@@ -363,7 +331,7 @@ void ChatClient::net_thread()
                 std::cout<<cmsg.message <<std::endl;
                 turn = true;
                 break;
-            default: //victoria, derrota, empate, input inválido
+            default: //default, victoria, derrota, empate, input inválido
                 std::cout<<cmsg.message <<std::endl;
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) turn = false;
                 break;

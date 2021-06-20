@@ -55,7 +55,7 @@ public:
 
     int from_bin(char * bobj);
 
-    uint8_t type;
+    MessageType type;
 
     std::string nick;
     std::string message;
@@ -118,7 +118,7 @@ private:
     int contadorRonda = 0;
     int puntos1=0;
     int puntos2=0;
-
+    void createMessage(ChatMessage cmsg);
     
 };
 
