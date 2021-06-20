@@ -7,23 +7,7 @@
 #include "Serializable.h"
 #include "Socket.h"
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
 
-/**
- *  Mensaje del protocolo de la aplicación de Chat
- *
- *  +-------------------+
- *  | Tipo: uint8_t     | 0 (login), 1 (mensaje), 2 (logout)
- *  +-------------------+
- *  | Nick: char[8]     | Nick incluido el char terminación de cadena '\0'
- *  +-------------------+
- *  |                   |
- *  | Mensaje: char[80] | Mensaje incluido el char terminación de cadena '\0'
- *  |                   |
- *  +-------------------+
- *
- */
 class ChatMessage: public Serializable
 {
 public:
@@ -73,6 +57,7 @@ public:
     ChatServer(const char * s, const char * p, const char * n): socket(s, p),
         nick(n){
             for(int i=0; i<9;i++){casillas.push_back(-1);}
+            socket.bind();
         };
     // {
     //     // socket.bind();
@@ -89,7 +74,7 @@ public:
     void isValid(ChatMessage cmsg, ChatMessage::MessageType &m);
     ChatMessage::MessageType winner();
     std::string renderGame();
-    std::string ChatServer::renderUI();
+    std::string renderUI();
     void endGame(ChatMessage::MessageType t);
 
     //void closeServer();
@@ -118,7 +103,7 @@ private:
     int contadorRonda = 0;
     int puntos1=0;
     int puntos2=0;
-    void createMessage(ChatMessage cmsg);
+    void createMessage(ChatMessage &cmsg);
     
 };
 

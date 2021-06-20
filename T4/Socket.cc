@@ -34,13 +34,13 @@ Socket::Socket(const char * address, const char * port):sd(-1)
 
 int Socket::recv(Serializable &obj, Socket * &sock)
 {
+
     struct sockaddr sa;
     socklen_t sa_len = sizeof(struct sockaddr);
 
     char buffer[MAX_MESSAGE_SIZE];
 
     ssize_t bytes = ::recvfrom(sd, buffer, MAX_MESSAGE_SIZE, 0, &sa, &sa_len);
-
     if ( bytes <= 0 )
     {
         return -1;
@@ -63,6 +63,7 @@ int Socket::send(Serializable& obj, const Socket& sock)
     obj.to_bin();
 
     ssize_t bytes = sendto(sd,obj.data(),obj.size(),0,&sock.sa, sock.sa_len);
+    std::cout << "enviando mensaje,,,,,"<<std::endl;
     if(bytes <=0) return -1;
     return 0;
 }

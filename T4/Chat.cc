@@ -57,14 +57,15 @@ void ChatServer::do_messages()
         ChatMessage cmsg;
         Socket *client;
         socket.recv(cmsg,client);
-        std::unique_ptr<Socket> cliente(client);
+        std::unique_ptr<Socket> cliente(client);  
         if(clients.size() == 0){ //si no ha añadido ningún cliente aún, se trata de la primera conexión. Guardamos la información del cliente en dicho caso.
+            
             clients.push_back(std::move(cliente));
             clientNick = cmsg.nick;
         }
         createMessage(cmsg);
-        std::cout << cmsg.message << std::endl;
-        socket.send(cmsg,*clients[0].get());
+        if(cmsg.type != ChatMessage::MessageType::LOGIN)std::cout << cmsg.message << std::endl;
+        socket.send(cmsg,*clients[0]);
         
     }
 }
@@ -79,7 +80,7 @@ void ChatServer::input_thread(){
                 std::string msg;
                 std::getline(std::cin,msg);
                 //Creamos un mensaje con el input recibido
-                ChatMessage cmsg(nick,msg);
+                ChatMessage cmsg = ChatMessage(nick,msg);
                 cmsg.type= ChatMessage::MESSAGE; //default
                 //comprobamos que el input sea válido
                 isValid(cmsg,cmsg.type);
@@ -87,7 +88,7 @@ void ChatServer::input_thread(){
                 createMessage(cmsg);
                 std::cout << cmsg.message << std::endl;
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
-                    socket.send(cmsg,*clients[0].get());
+                    socket.send(cmsg,*clients[0]);
             }
            
         }
@@ -95,7 +96,7 @@ void ChatServer::input_thread(){
 }
 
 //LÓGICA DEL JUEGO
-void ChatServer::createMessage(ChatMessage cmsg){
+void ChatServer::createMessage(ChatMessage &cmsg){
     switch (cmsg.type)
         {
             case ChatMessage::MessageType::INVALIDO :
@@ -123,7 +124,6 @@ void ChatServer::createMessage(ChatMessage cmsg){
                 std::cout<<"A cuantas rondas quieres hacer la partida? 1,3,5, 0 (infinito)"<<std::endl;
                 //comunica al cliente que se esta configurando la partida
                 cmsg.message = nick + " está configurando la partida, espera...";
-                cmsg.type = ChatMessage::MessageType::MESSAGE;
                 connect = true;
                 break;
             case ChatMessage::MessageType::LOGOUT: 
