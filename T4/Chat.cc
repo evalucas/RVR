@@ -67,9 +67,9 @@ void ChatServer::do_messages()
         
         ChatMessage cmsg;
 
-        Socket *client = &socket;
+        Socket *client;
 
-        socket.recv(cmsg, socket);
+        socket.recv(cmsg,client);
         
         std::unique_ptr<Socket> cliente(client);
 

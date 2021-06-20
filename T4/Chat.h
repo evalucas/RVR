@@ -71,7 +71,9 @@ class ChatServer
 {//Servidor-Cliente
 public:
     ChatServer(const char * s, const char * p, const char * n): socket(s, p),
-        nick(n){};
+        nick(n){
+            for(int i=0; i<9;i++){casillas.push_back(-1);}
+        };
     // {
     //     // socket.bind();
     // };
