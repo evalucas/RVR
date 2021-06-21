@@ -12,7 +12,7 @@ void ChatMessage::to_bin()
     //Serializar los campos type, nick y message en el buffer _data
 
     char *tmp = _data;
-    
+
     memcpy(tmp, &type, sizeof(uint8_t));
 
     tmp +=sizeof(uint8_t);
@@ -32,7 +32,7 @@ int ChatMessage::from_bin(char * bobj)
 
     //Reconstruir la clase usando el buffer _data
 
-    char *tmp = _data;
+    char *tmp = bobj;
     
     memcpy(&type, tmp, sizeof(uint8_t));
 
@@ -82,7 +82,9 @@ void ChatServer::input_thread(){
                 ChatMessage cmsg = ChatMessage(nick,msg);
                 cmsg.type= ChatMessage::MESSAGE; //default
                 //comprobamos que el input sea válido
-                isValid(cmsg,cmsg.type);
+                ChatMessage::MessageType res;
+                isValid(cmsg,res);
+                cmsg.type = res;
                 //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
                 createMessage(cmsg);
                 std::cout << cmsg.message << std::endl;
@@ -139,9 +141,12 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                 }
                 else{ //en este caso, está recibiendo cualquier tipo de input del cliente.
                     //comprobamos que el input sea válido
-                    isValid(cmsg,cmsg.type);
+                    ChatMessage::MessageType res;
+                    isValid(cmsg,res);
+                    cmsg.type = res;
                     //volvemos a crear un mensaje para enviar al cliente/mostrar en pantalla del servidor.
-                    createMessage(cmsg);
+                    //createMessage(cmsg);
+                    cmsg.message = "Este es el estado del juego";
                 }
                 break;
         }   
@@ -333,9 +338,7 @@ void ChatClient::net_thread()
         //Recibir Mensajes de red
         //Mostrar en pantalla el mensaje de la forma "nick: mensaje"
         ChatMessage cmsg;
-        Socket* s = new Socket(socket);
-        std::unique_ptr<Socket> serv = std::make_unique<Socket>(*s);
-        socket.recv(cmsg,s);
+        socket.recv(cmsg);
         switch (cmsg.type)
             {
             case ChatMessage::MessageType::ENCURSO :

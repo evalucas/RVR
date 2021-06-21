@@ -39,7 +39,7 @@ public:
 
     int from_bin(char * bobj);
 
-    MessageType type;
+    uint8_t type;
 
     std::string nick;
     std::string message;
