@@ -145,14 +145,13 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                     isValid(cmsg,res);
                     cmsg.type = res;
                     //volvemos a crear un mensaje para enviar al cliente/mostrar en pantalla del servidor.
-                    //createMessage(cmsg);
-                    cmsg.message = "Este es el estado del juego";
+                    createMessage(cmsg);
                 }
                 break;
         }   
 }
 
-void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
+void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
     
     const char *buffer = msg.message.c_str();
     int i = std::atoi(buffer);

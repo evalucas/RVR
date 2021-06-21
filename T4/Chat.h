@@ -11,7 +11,7 @@
 class ChatMessage: public Serializable
 {
 public:
-    static const size_t MESSAGE_SIZE = sizeof(char) * 88 + sizeof(uint8_t);
+    static const size_t MESSAGE_SIZE = sizeof(char) * 300 + sizeof(uint8_t);
 
     enum MessageType
     {
@@ -71,7 +71,7 @@ public:
 
     void input_thread();
 
-    void isValid(ChatMessage cmsg, ChatMessage::MessageType &m);
+    void isValid(ChatMessage &cmsg, ChatMessage::MessageType &m);
     ChatMessage::MessageType winner();
     std::string renderGame();
     std::string renderUI();
