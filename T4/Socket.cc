@@ -61,9 +61,9 @@ int Socket::send(Serializable& obj, const Socket& sock)
     //Serializar el objeto
     //Enviar el objeto binario a sock usando el socket sd
     obj.to_bin();
-
+    
     ssize_t bytes = sendto(sd,obj.data(),obj.size(),0,&sock.sa, sock.sa_len);
-    std::cout << "enviando mensaje,,,,,"<<std::endl;
+
     if(bytes <=0) return -1;
     return 0;
 }

@@ -55,11 +55,10 @@ void ChatServer::do_messages()
     while (true)
     {
         ChatMessage cmsg;
-        Socket *client;
-        socket.recv(cmsg,client);
-        std::unique_ptr<Socket> cliente(client);  
+        Socket *client = new Socket(socket);
+        socket.recv(cmsg,client);   
         if(clients.size() == 0){ //si no ha añadido ningún cliente aún, se trata de la primera conexión. Guardamos la información del cliente en dicho caso.
-            
+            std::unique_ptr<Socket> cliente = std::make_unique<Socket>(*client);
             clients.push_back(std::move(cliente));
             clientNick = cmsg.nick;
         }
@@ -89,6 +88,7 @@ void ChatServer::input_thread(){
                 std::cout << cmsg.message << std::endl;
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
                     socket.send(cmsg,*clients[0]);
+
             }
            
         }
@@ -113,6 +113,7 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                 cmsg.message = "EMPATE";
                 break;
             case ChatMessage::MessageType::ENCURSO :   
+                cmsg.message = "";
                 cmsg.message = renderUI() + renderGame();
                 turn = false;
                 contadorTurno++;
@@ -150,7 +151,7 @@ void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
     
     const char *buffer = msg.message.c_str();
     int i = std::atoi(buffer);
-    
+
     if(!started){
         if(i == -1 || i == 1 || i==3 || i == 5 ){
             contadorRonda = i;
@@ -162,13 +163,18 @@ void ChatServer::isValid(ChatMessage msg, ChatMessage::MessageType &m) {
     }
     else if(i <10 && i > 0)
     {
+        i--;
         if(casillas[i]!=-1) //CASILLA OCUPADA
             m = ChatMessage::MessageType::INVALIDO;
         else{
             if(msg.nick == nick) //Es tu nick, asi que eres el servidor
-                casillas[i] = 0;
+                {casillas[i] = 0;
+                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i <<std::endl;
+                }
             else
-                casillas[i] = 1;   
+                {casillas[i] = 1;   
+                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i <<std::endl;}
+
             
             if(contadorTurno >3){     //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
                 m = winner(); //Comprueba el estado del tablero y guarda el mensaje a enviar al cliente
@@ -228,12 +234,15 @@ std::string ChatServer::renderUI(){
 // _|_|_
 // O|_|X
 std::string ChatServer::renderGame(){ //No se si esto tiene que estar aqui o en client
+// 
+
 
     std::string tablero = "";
     for(int i=0; i<3;i++){
         for(int j=0; j<3;j++){
-            if(casillas[j+i]==0) tablero.push_back('X');
-            else if(casillas[j+i]==1) tablero.push_back('O');
+            int k = j+(3*i);
+            if(casillas[k]==0) tablero.push_back('X');
+            else if(casillas[k]==1) tablero.push_back('O');
             else tablero.push_back('_');
 
             if(j==0 || j==1) tablero.push_back('|');
@@ -284,7 +293,7 @@ void ChatClient::login()
 
     ChatMessage em(nick, msg);
     em.type = ChatMessage::LOGIN;
-
+    
     socket.send(em, socket);
 }
 
@@ -324,7 +333,9 @@ void ChatClient::net_thread()
         //Recibir Mensajes de red
         //Mostrar en pantalla el mensaje de la forma "nick: mensaje"
         ChatMessage cmsg;
-        socket.recv(cmsg);
+        Socket* s = new Socket(socket);
+        std::unique_ptr<Socket> serv = std::make_unique<Socket>(*s);
+        socket.recv(cmsg,s);
         switch (cmsg.type)
             {
             case ChatMessage::MessageType::ENCURSO :
@@ -336,11 +347,8 @@ void ChatClient::net_thread()
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) turn = false;
                 break;
             }
-        socket.send(cmsg,socket);
     }
-
-
-        
+     
 }
 
 
