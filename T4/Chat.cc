@@ -99,6 +99,7 @@ void ChatServer::input_thread(){
             //si el movimiento del jugador hace que finalice la partida, debe enviar además una nueva partida al cliente
         }
     }
+    
 }
 
 //LÓGICA DEL JUEGO
@@ -107,8 +108,7 @@ void ChatServer::createMessage(ChatMessage &cmsg){
     switch (cmsg.type)
         {
             case ChatMessage::MessageType::INVALIDO :
-                if(started)cmsg.message = "INSERTA UNA CASILLA DEL 1 AL 9 PARA METER TU FICHA";
-                else cmsg.message = "INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: -1 (infinitas rondas), 1, 3, 5";
+                if(started)cmsg.message = "INSERTA UNA CASILLA LIBRE DEL 1 AL 9 PARA METER TU FICHA";
                 break;
             case ChatMessage::MessageType::GANA1 :
                 cmsg.message += "Ha ganado "+nick + '\n';
@@ -132,6 +132,7 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                 std::cout << cmsg.nick << " conectado. Empezando partida..." << std::endl;
                 if(nick == cmsg.nick) nick.push_back('_'); //si ambos se llaman igual, modificamos el nombre internamente
                 connect = true;
+                cmsg.message = renderUI() + renderGame();
                 break;
             case ChatMessage::MessageType::LOGOUT: 
                 cmsg.message = cmsg.nick + " desconectado";
@@ -173,7 +174,7 @@ void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
             else
                 casillas[i] = 1;   
                 
-            if(contadorTurno >4){     //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
+            if(contadorTurno >3){     //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
                 m = winner(); //Comprueba el estado del tablero y guarda el mensaje a enviar al cliente
                 msg.message = renderUI() + renderGame(); //si gana, pierde, o empata, añade el ultimo tablero
                 if(m == ChatMessage::MessageType::GANA1 || m == ChatMessage::MessageType::GANA2 ||m == ChatMessage::MessageType::EMPATE) quit = true;
@@ -245,9 +246,9 @@ ChatMessage::MessageType ChatServer::winner(){
         if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
         else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
     }
-    if(casillas[3]==casillas[4] && casillas[4]==casillas[6]){
-        if(casillas[0]==0) return ChatMessage::MessageType::GANA1;
-        else if(casillas[0]==1) return ChatMessage::MessageType::GANA2; 
+    if(casillas[2]==casillas[4] && casillas[4]==casillas[6]){
+        if(casillas[2]==0) return ChatMessage::MessageType::GANA1;
+        else if(casillas[2]==1) return ChatMessage::MessageType::GANA2; 
     }
     //comprueba que el tablero esté lleno o no
     for(int i=0; i<9;i++){
@@ -284,7 +285,6 @@ void ChatClient::logout()
 
 void ChatClient::input_thread()
 {
-
     while (!quit)
     {
     //std::cout << turn << std::endl;
