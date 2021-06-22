@@ -106,25 +106,25 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                 else cmsg.message = "INSERTA UN NÚMERO ENTRE LOS SIGUIENTES: -1 (infinitas rondas), 1, 3, 5";
                 break;
             case ChatMessage::MessageType::GANA1 :
-                cmsg.message = "Ha ganado "+nick;
+                cmsg.message += "Ha ganado "+nick;
                 break;
             case ChatMessage::MessageType::GANA2 :
-                cmsg.message = "Ha ganado "+clientNick;
+                cmsg.message += "Ha ganado "+clientNick;
                 break;
             case ChatMessage::MessageType::EMPATE :
-                cmsg.message = "EMPATE";
+                cmsg.message += "EMPATE";
                 break;
             case ChatMessage::MessageType::ENCURSO :   
                 cmsg.message = "";
                 cmsg.message = renderUI() + renderGame();
-                turn = false;
+                turn = !turn;
                 contadorTurno++;
                 break;
             case ChatMessage::MessageType::LOGIN: 
                 std::cout << cmsg.nick << " conectado. Empezando partida..." << std::endl;
                 if(nick == cmsg.nick) nick.push_back('_'); //si ambos se llaman igual, modificamos el nombre internamente
                 //configurar partida
-                std::cout<<"A cuantas rondas quieres hacer la partida? 1,3,5, 0 (infinito)"<<std::endl;
+                std::cout<<"A cuantas rondas quieres hacer la partida? 1,3,5, -1 (infinito)"<<std::endl;
                 //comunica al cliente que se esta configurando la partida
                 cmsg.message = nick + " está configurando la partida, espera...";
                 connect = true;
@@ -173,15 +173,16 @@ void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
         else{
             if(msg.nick == nick) //Es tu nick, asi que eres el servidor
                 {casillas[i] = 0;
-                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i <<std::endl;
+                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i+1 <<std::endl;
                 }
             else
                 {casillas[i] = 1;   
-                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i <<std::endl;}
+                std::cout<<"Añadida ficha de " << msg.nick << " en la posición " << i+1 <<std::endl;}
 
             
             if(contadorTurno >3){     //SÓLO comprobará la condición de victoria si han pasado los turnos suficientes como para comprobar un ganador.
                 m = winner(); //Comprueba el estado del tablero y guarda el mensaje a enviar al cliente
+                msg.message = renderUI() + renderGame();
                 endGame(m);
             }
             else{m=ChatMessage::MessageType::ENCURSO;}
@@ -191,6 +192,7 @@ void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
     }
  
 }  
+
 
 void ChatServer::endGame(ChatMessage::MessageType t){
     switch (t)
@@ -217,16 +219,23 @@ void ChatServer::endGame(ChatMessage::MessageType t){
 
 std::string ChatServer::renderUI(){
     //RENDERIZAR UI (turno actual, puntos de cada jugador, nicknames)
-    std::string UI;
+    std::string UI = " ";
     std::string ronda;
     if(contadorRonda < 0) ronda = "infinitas";
     else ronda = contadorRonda;
 
-    UI = nick + ": "; 
-    UI+= puntos1 + " ----- " + clientNick + ": " ;
-    UI+= puntos2 + '\n' + "Turno: ";
-    UI+= contadorTurno + '\n' + "Rondas Restantes: " + ronda + '\n' + '\n';
-    
+    UI += nick + ": "; 
+    UI.push_back(puntos1);
+    UI += " ----- " + clientNick + ": " ;
+    UI.push_back(puntos2);
+    UI.push_back('\n');
+    UI += "Turno: ";
+    UI.push_back(contadorTurno);
+    UI.push_back('\n');
+    UI += "Rondas Restantes: " + ronda;
+    UI.push_back('\n');
+    UI.push_back('\n');
+
     return UI;  
 }
 
@@ -342,7 +351,7 @@ void ChatClient::net_thread()
             {
             case ChatMessage::MessageType::ENCURSO :
                 std::cout<<cmsg.message <<std::endl;
-                turn = true;
+                turn = !turn;
                 break;
             default: //default, victoria, derrota, empate, input inválido
                 std::cout<<cmsg.message <<std::endl;

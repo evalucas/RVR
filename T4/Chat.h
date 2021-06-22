@@ -101,8 +101,8 @@ private:
     std::vector<int> casillas;
     int contadorTurno = 0;
     int contadorRonda = 0;
-    int puntos1=0;
-    int puntos2=0;
+    int puntos1 = 0;
+    int puntos2 = 0;
     void createMessage(ChatMessage &cmsg);
     
 };
