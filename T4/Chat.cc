@@ -52,32 +52,42 @@ int ChatMessage::from_bin(char * bobj)
 
 void ChatServer::do_messages()
 {        
-    while (!quit)
+    while (true)
     {
-    //std::cout << turn << std::endl;
-        if(!turn){
-        ChatMessage cmsg;
-        Socket *client = new Socket(socket);
-        socket.recv(cmsg,client);   
-        if(clients.size() == 0){ //si no ha añadido ningún cliente aún, se trata de la primera conexión. Guardamos la información del cliente en dicho caso.
-            std::unique_ptr<Socket> cliente = std::make_unique<Socket>(*client);
-            clients.push_back(std::move(cliente));
-            clientNick = cmsg.nick;
+        if(!quit){
+            
+            ChatMessage cmsg;
+            Socket *client = new Socket(socket);
+            socket.recv(cmsg,client);   
+            if(clients.size() == 0){ //si no ha añadido ningún cliente aún, se trata de la primera conexión. Guardamos la información del cliente en dicho caso.
+                std::unique_ptr<Socket> cliente = std::make_unique<Socket>(*client);
+                clients.push_back(std::move(cliente));
+                clientNick = cmsg.nick;
+            }
+            if(cmsg.type == ChatMessage::LOGOUT){ //comprobamos que el mensaje recibido sea de tipo LOGOUT aunque se encuentre en su turno
+                createMessage(cmsg);
+                std::cout << cmsg.message << std::endl;
+                socket.send(cmsg,*clients[0]);
+                turn = false;
+            }
+            else if(!turn){//sólo comprobará el mensaje recibido si NO es su turno, a no ser que sea de tipo LOGOUT
+                createMessage(cmsg);
+                if(cmsg.type != ChatMessage::MessageType::INVALIDO){
+                    std::cout << cmsg.message << std::endl; turn = true;}
+                if(cmsg.type == ChatMessage::MessageType::ENCURSO) 
+                    cmsg.type = ChatMessage::MessageType::MESSAGE; //para que el cliente sepa que aún no le toca
+                socket.send(cmsg,*clients[0]); 
+            }
+                   
         }
-        createMessage(cmsg);
-        if(cmsg.type != ChatMessage::MessageType::INVALIDO){
-            std::cout << cmsg.message << std::endl; turn = true;}
-        if(cmsg.type == ChatMessage::MessageType::ENCURSO) 
-            cmsg.type = ChatMessage::MessageType::MESSAGE; //para que el cliente sepa que aún no le toca
-        socket.send(cmsg,*clients[0]);   }     
+        
     }
 }
 
 void ChatServer::input_thread(){
-    while (!quit)
+    while (true)
     {
-    //std::cout << turn << std::endl;
-        if(connect && turn) //si alguien se ha conectado, se pueden realizar inputs. Esperará hasta que alguien entre para comenzar
+        if(!quit && connect) //si alguien se ha conectado, se pueden realizar inputs. Esperará hasta que alguien entre para comenzar
         {
            //Lee el input del servidor
             std::string msg;
@@ -85,18 +95,27 @@ void ChatServer::input_thread(){
             //Creamos un mensaje con el input recibido
             ChatMessage cmsg = ChatMessage(nick,msg);
             cmsg.type= ChatMessage::MESSAGE; //default
-             //comprobamos que el input sea válido
-            ChatMessage::MessageType res;
-            isValid(cmsg,res);
-            cmsg.type = res;
-            //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
-            createMessage(cmsg);
-            std::cout << cmsg.message << std::endl;
-
-            if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
-                {socket.send(cmsg,*clients[0]);
-                turn = false;} //el turno se pone a false  
-            //si el movimiento del jugador hace que finalice la partida, debe enviar además una nueva partida al cliente
+             //comprobamos que el input sea de LOGOUT aunque no sea su turno
+            if(msg == "q"){
+                cmsg.type = ChatMessage::LOGOUT;
+                createMessage(cmsg);
+                std::cout << cmsg.message << std::endl;
+                socket.send(cmsg,*clients[0]);
+                turn = false;
+            }
+            else if (turn){ //comprobamos que cualquier tipo de input que no sea de LOGOUT sea válido, en su turno
+                ChatMessage::MessageType res;
+                isValid(cmsg,res);
+                cmsg.type = res;
+                //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
+                createMessage(cmsg);
+                std::cout << cmsg.message << std::endl;
+                if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
+                    {socket.send(cmsg,*clients[0]);
+                    turn = false;} //el turno se pone a false  
+                //si el movimiento del jugador hace que finalice la partida, debe enviar además una nueva partida al cliente
+            }
+            
         }
     }
     
@@ -108,23 +127,18 @@ void ChatServer::createMessage(ChatMessage &cmsg){
     switch (cmsg.type)
         {
             case ChatMessage::MessageType::INVALIDO :
-                if(started)cmsg.message = "INSERTA UNA CASILLA LIBRE DEL 1 AL 9 PARA METER TU FICHA";
+                cmsg.message = "INSERTA UNA CASILLA LIBRE DEL 1 AL 9 PARA METER TU FICHA";
                 break;
             case ChatMessage::MessageType::GANA1 :
                 cmsg.message += "Ha ganado "+nick + '\n';
-                cmsg.message += renderUI() + renderGame();
                 break;
             case ChatMessage::MessageType::GANA2 :
                 cmsg.message += "Ha ganado "+clientNick+ '\n';
-                cmsg.message += renderUI() + renderGame();
                 break;
             case ChatMessage::MessageType::EMPATE :
                 cmsg.message += "EMPATE"+ '\n';
-                cmsg.message += renderUI() + renderGame();
                 break;
             case ChatMessage::MessageType::ENCURSO :   
-                if(!started)
-                    started = true;
                 cmsg.message = renderUI() + renderGame();
                 contadorTurno++;
                 break;
@@ -154,7 +168,6 @@ void ChatServer::createMessage(ChatMessage &cmsg){
 void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
     
     if(msg.message == "q") {
-        quit = true;
         m = ChatMessage::MessageType::LOGOUT;
         return;
     }
@@ -191,8 +204,8 @@ std::string ChatServer::renderUI(){
     //RENDERIZAR UI (turno actual, puntos de cada jugador, nicknames)
     std::string UI = " ";    
 
-    UI += nick + ": " +std::to_string(puntos1); 
-    UI += " ----- " + clientNick + ": " + std::to_string(puntos2);
+    UI += nick + ": "; 
+    UI += " ----- " + clientNick + ": ";
     UI.push_back('\n');
     UI += "Turno: " +std::to_string(contadorTurno);
     UI.push_back('\n');
@@ -285,19 +298,28 @@ void ChatClient::logout()
 
 void ChatClient::input_thread()
 {
-    while (!quit)
+    while (true)
     {
-    //std::cout << turn << std::endl;
-        if(turn){
-       //Lee el input del cliente
-            turn = false;
+    
+        if(!quit){
+            //Lee el input del cliente
             std::string msg;
             std::cin>>msg;
             //envía el input al servidor, y éste comprobará si es válido
             ChatMessage cmsg(nick,msg);
             cmsg.type= ChatMessage::MESSAGE; //default
-            socket.send(cmsg,socket);
+            //comprueba si el input es de LOGOUT aunque no sea su turno
+            if(msg == "q"){
+                quit = false;
+                cmsg.type = ChatMessage::LOGOUT;
+                socket.send(cmsg,socket);
             }
+            else if(turn){
+                turn = false;
+                socket.send(cmsg,socket);
+            }
+                
+        }
     }
 }
 
@@ -305,28 +327,34 @@ void ChatClient::net_thread()
 {
 
     //Recibir el Tablero (render)
-    while(!quit)
+    while(true)
     {
-    //std::cout << turn << std::endl;
-        if(!turn){
-        //Recibir Mensajes de red
-        //Mostrar en pantalla el mensaje de la forma "nick: mensaje"
-        ChatMessage cmsg;
-        socket.recv(cmsg);
-        switch (cmsg.type)
-            {
-            case ChatMessage::MessageType::ENCURSO :
-                turn = true;
-                std::cout<<cmsg.message<<std::endl;
-                break;
-            case ChatMessage::MessageType::LOGOUT :
+    
+        if(!quit){
+            //Recibir Mensajes de red
+            //Mostrar en pantalla el mensaje de la forma "nick: mensaje"
+            ChatMessage cmsg;
+            socket.recv(cmsg);
+            
+            if(cmsg.type == ChatMessage::LOGOUT){//comprueba si el mensaje recibido es de tipo LOGOUT aunque sea su turno
                 quit = true;
-                break;
-            default: //default, victoria, derrota, empate, input inválido
+                turn = false;
                 std::cout<<cmsg.message<<std::endl;
-                if(cmsg.type == ChatMessage::MessageType::INVALIDO) turn = true;
-                break;
             }
+            else if (!turn){ //sólo comprobará el mensaje recibido si NO es su turno, a no ser que sea de tipo LOGOUT
+                switch (cmsg.type)
+                {
+                case ChatMessage::MessageType::ENCURSO :
+                    turn = true;
+                    std::cout<<cmsg.message<<std::endl;
+                    break;
+                default: //default, victoria, derrota, empate, input inválido
+                    std::cout<<cmsg.message<<std::endl;
+                    if(cmsg.type == ChatMessage::MessageType::INVALIDO) turn = true;
+                    break;
+                }
+            }
+       
         }
     }
      

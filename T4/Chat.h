@@ -97,12 +97,8 @@ private:
     std::string clientNick;
     bool turn = false;
     bool connect = false;
-    bool started = false;
     std::vector<int> casillas;
     int contadorTurno = 0;
-    int contadorRonda = 0;
-    int puntos1 = 0;
-    int puntos2 = 0;
     bool quit = false;
     void createMessage(ChatMessage &cmsg);
     void reset();
