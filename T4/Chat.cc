@@ -73,7 +73,9 @@ void ChatServer::do_messages()
             else if(!turn){//sólo comprobará el mensaje recibido si NO es su turno, a no ser que sea de tipo LOGOUT
                 createMessage(cmsg);
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO){
-                    std::cout << cmsg.message << std::endl; turn = true;}
+                    std::cout << cmsg.message << std::endl;
+                    std::cout<< "-----------------------"<<std::endl;
+                    turn = true;}
                 if(cmsg.type == ChatMessage::MessageType::ENCURSO) 
                     cmsg.type = ChatMessage::MessageType::MESSAGE; //para que el cliente sepa que aún no le toca
                 socket.send(cmsg,*clients[0]); 
@@ -110,6 +112,7 @@ void ChatServer::input_thread(){
                 //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
                 createMessage(cmsg);
                 std::cout << cmsg.message << std::endl;
+                std::cout<< "-----------------------"<<std::endl;
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
                     {socket.send(cmsg,*clients[0]);
                     turn = false;} //el turno se pone a false  
@@ -130,10 +133,10 @@ void ChatServer::createMessage(ChatMessage &cmsg){
                 cmsg.message = "INSERTA UNA CASILLA LIBRE DEL 1 AL 9 PARA METER TU FICHA";
                 break;
             case ChatMessage::MessageType::GANA1 :
-                cmsg.message += "Ha ganado "+nick + '\n';
+                cmsg.message += "Ganó "+nick + '\n';
                 break;
             case ChatMessage::MessageType::GANA2 :
-                cmsg.message += "Ha ganado "+clientNick+ '\n';
+                cmsg.message += "Ganó "+clientNick+ '\n';
                 break;
             case ChatMessage::MessageType::EMPATE :
                 cmsg.message += "EMPATE"+ '\n';
@@ -202,15 +205,18 @@ void ChatServer::isValid(ChatMessage &msg, ChatMessage::MessageType &m) {
 
 std::string ChatServer::renderUI(){
     //RENDERIZAR UI (turno actual, puntos de cada jugador, nicknames)
-    std::string UI = " ";    
+    std::string UI = " ";
+    UI += nick + " VS " + clientNick ;
+    UI.push_back('\n');
+    UI += "Turno n.: " +std::to_string(contadorTurno+1);
+    UI.push_back('\n');
+    UI+= "TURNO DE ";
+    if(!turn)UI+=nick;
+    else UI+=clientNick;
+    UI.push_back('\n');
+    UI.push_back('\n');
 
-    UI += nick + ": "; 
-    UI += " ----- " + clientNick + ": ";
-    UI.push_back('\n');
-    UI += "Turno: " +std::to_string(contadorTurno);
-    UI.push_back('\n');
-    UI.push_back('\n');
-    UI.push_back('\n');
+
 
     return UI;  
 }
@@ -347,9 +353,11 @@ void ChatClient::net_thread()
                 case ChatMessage::MessageType::ENCURSO :
                     turn = true;
                     std::cout<<cmsg.message<<std::endl;
+                    std::cout<< "-----------------------"<<std::endl;
                     break;
                 default: //default, victoria, derrota, empate, input inválido
                     std::cout<<cmsg.message<<std::endl;
+                    std::cout<< "-----------------------"<<std::endl;
                     if(cmsg.type == ChatMessage::MessageType::INVALIDO) turn = true;
                     break;
                 }
