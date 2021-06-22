@@ -51,7 +51,9 @@ int ChatMessage::from_bin(char * bobj)
 // -----------------------------------------------------------------------------
 
 void ChatServer::do_messages()
-{
+{        std::string turnDebug;
+    if(turn==true) turnDebug="true";
+    else if(turn==false) turnDebug="false";
     while (true)
     {
         ChatMessage cmsg;
@@ -63,13 +65,18 @@ void ChatServer::do_messages()
             clientNick = cmsg.nick;
         }
         createMessage(cmsg);
-        if(cmsg.type != ChatMessage::MessageType::LOGIN)std::cout << cmsg.message << std::endl;
+        if(cmsg.type != ChatMessage::MessageType::LOGIN){std::cout << cmsg.message << std::endl;std::cout<<turnDebug<<std::endl;}
+
         socket.send(cmsg,*clients[0]);
         
     }
 }
 
 void ChatServer::input_thread(){
+        std::string turnDebug;
+    if(turn==true) turnDebug="true";
+    else if(turn==false) turnDebug="false";
+    
     while (true)
     {
         while(turn)
@@ -88,6 +95,8 @@ void ChatServer::input_thread(){
                 //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
                 createMessage(cmsg);
                 std::cout << cmsg.message << std::endl;
+                std::cout<<turnDebug<<std::endl;
+
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
                     socket.send(cmsg,*clients[0]);
 
@@ -337,6 +346,9 @@ void ChatClient::input_thread()
 
 void ChatClient::net_thread()
 {
+    std::string turnDebug;
+    if(turn==true) turnDebug="true";
+    else if(turn==false) turnDebug="false";
     //Recibir el Tablero (render)
     while(true)
     {
@@ -348,12 +360,19 @@ void ChatClient::net_thread()
             {
             case ChatMessage::MessageType::ENCURSO :
                 std::cout<<cmsg.message<<std::endl;
-                turn = !turn;
+                std::cout<<turnDebug<<std::endl;
+                if(turn==true) turn=false;
+                else if(turn==false) turn=true;
+                std::cout<<turnDebug<<std::endl;
+
                 break;
             default: //default, victoria, derrota, empate, input inválido
                 std::cout<<cmsg.message<<std::endl;
+                std::cout<<turnDebug<<std::endl;
                 if(cmsg.type == ChatMessage::MessageType::INVALIDO) turn = true;
                 else turn=false;
+                std::cout<<turnDebug<<std::endl;
+
                 break;
             }
     }
