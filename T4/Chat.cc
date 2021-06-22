@@ -63,7 +63,6 @@ void ChatServer::do_messages()
             clientNick = cmsg.nick;
         }
         createMessage(cmsg);
-        for(int i=0; i<9;i++){std::cout << casillas[i];}
         if(cmsg.type != ChatMessage::MessageType::LOGIN)std::cout << cmsg.message << std::endl;
         socket.send(cmsg,*clients[0]);
         
@@ -89,8 +88,6 @@ void ChatServer::input_thread(){
                 //según el resultado de la comprobación (errores o mensajes válidos se contemplan), el servidor reacciona ante su propio input recibido
                 createMessage(cmsg);
                 std::cout << cmsg.message << std::endl;
-                for(int i=0; i<9;i++){std::cout << casillas[i];}
-
                 if(cmsg.type != ChatMessage::MessageType::INVALIDO) //a no ser que haya habido un error del servidor, debe enviar al cliente el input del servidor.
                     socket.send(cmsg,*clients[0]);
 
@@ -223,20 +220,16 @@ void ChatServer::endGame(ChatMessage::MessageType t){
 
 std::string ChatServer::renderUI(){
     //RENDERIZAR UI (turno actual, puntos de cada jugador, nicknames)
-    std::string UI = " ";
-    std::string ronda;
-    if(contadorRonda < 0) ronda = "infinitas";
-    else ronda = contadorRonda;
+    std::string UI = " ";    
 
-    UI += nick + ": "; 
-    UI.push_back(puntos1);
-    UI += " ----- " + clientNick + ": " ;
-    UI.push_back(puntos2);
+    UI += nick + ": " +std::to_string(puntos1); 
+    UI += " ----- " + clientNick + ": " + std::to_string(puntos2);
     UI.push_back('\n');
-    UI += "Turno: ";
-    UI.push_back(contadorTurno);
+    UI += "Turno: " +std::to_string(contadorTurno);
     UI.push_back('\n');
-    UI += "Rondas Restantes: " + ronda;
+    UI += "Rondas Restantes: ";
+    if(contadorRonda < 0) UI += "infinitas";
+    else UI += std::to_string(contadorRonda);
     UI.push_back('\n');
     UI.push_back('\n');
 
@@ -272,7 +265,7 @@ ChatMessage::MessageType ChatServer::winner(){
 
     //comprueba filas
     for(int i = 0 ; i < 3 ; i++){       
-        if(casillas[i*3]==casillas[i*3+1] && casillas[i+1]==casillas[i*3+2] ){
+        if(casillas[i*3]==casillas[i*3+1] && casillas[i*3+1]==casillas[i*3+2] ){
             if(casillas[i*3]==0) return ChatMessage::MessageType::GANA1;
             else if(casillas[i*3]==1) return ChatMessage::MessageType::GANA2; 
         }
@@ -354,11 +347,11 @@ void ChatClient::net_thread()
         switch (cmsg.type)
             {
             case ChatMessage::MessageType::ENCURSO :
-                std::cout<<cmsg.message << " "<< turn <<" " <<std::endl;
+                std::cout<<cmsg.message<<std::endl;
                 turn = !turn;
                 break;
             default: //default, victoria, derrota, empate, input inválido
-                std::cout<<cmsg.message << " "<< turn <<" " <<std::endl;
+                std::cout<<cmsg.message<<std::endl;
                 if(cmsg.type == ChatMessage::MessageType::INVALIDO) turn = true;
                 else turn=false;
                 break;
