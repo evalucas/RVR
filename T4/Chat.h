@@ -11,7 +11,7 @@
 class ChatMessage: public Serializable
 {
 public:
-    static const size_t MESSAGE_SIZE = sizeof(char) * 300 + sizeof(uint8_t);
+    static const size_t MESSAGE_SIZE = sizeof(char) * 600 + sizeof(uint8_t);
 
     enum MessageType
     {
@@ -25,7 +25,7 @@ public:
         ENCURSO = 6,
         
         INVALIDO= 7,
-        OCUPADO = 8
+        QUIT = 8
 
         //
         //Tipos de mensaje para el juego
@@ -95,7 +95,7 @@ private:
      */
     std::string nick;
     std::string clientNick;
-    bool turn = true;
+    bool turn = false;
     bool connect = false;
     bool started = false;
     std::vector<int> casillas;
@@ -103,8 +103,9 @@ private:
     int contadorRonda = 0;
     int puntos1 = 0;
     int puntos2 = 0;
+    bool quit = false;
     void createMessage(ChatMessage &cmsg);
-    
+    void reset();
 };
 
 // -----------------------------------------------------------------------------
@@ -158,5 +159,6 @@ private:
      */
     std::string nick;
     bool turn = false;
+    bool quit = false;
 };
 
