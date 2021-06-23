@@ -1,23 +1,23 @@
 CC=g++
 CFLAGS=-g -I.
-DEPS = Socket.h Chat.h
-OBJ = Socket.o Chat.o
+DEPS = Socket.h 4T.h
+OBJ = Socket.o 4T.o
 LIBS=-lpthread
 
 %.o: %.cc $(DEPS)
 	$(CC) -g -c -o $@ $< $(CFLAGS)
 
-all: cs cc
+all: 4ts 4tc
 
-cs: $(OBJ) ChatServer.o
+4ts: $(OBJ) 4TServer.o
 	g++ -o $@ $^ $(CFLAGS) $(LIBS)
 
-cc: $(OBJ) ChatClient.o
+4tc: $(OBJ) 4TClient.o
 	g++ -o $@ $^ $(CFLAGS) $(LIBS)
 
 
 .PHONY: clean
 
 clean:
-	rm -f *.o cs cc
+	rm -f *.o 4ts 4tc
 

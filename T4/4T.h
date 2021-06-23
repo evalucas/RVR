@@ -8,7 +8,7 @@
 #include "Socket.h"
 
 
-class ChatMessage: public Serializable
+class GameMessage: public Serializable
 {
 public:
     static const size_t MESSAGE_SIZE = sizeof(char) * 600 + sizeof(uint8_t);
@@ -31,9 +31,9 @@ public:
         //Tipos de mensaje para el juego
     };
 
-    ChatMessage(){};
+    GameMessage(){};
 
-    ChatMessage(const std::string& n, const std::string& m):nick(n),message(m){};
+    GameMessage(const std::string& n, const std::string& m):nick(n),message(m){};
 
     void to_bin();
 
@@ -51,10 +51,10 @@ public:
 /**
  *  Clase para el servidor de chat
  */
-class ChatServer
+class T4Server
 {//Servidor-Cliente
 public:
-    ChatServer(const char * s, const char * p, const char * n): socket(s, p),
+    T4Server(const char * s, const char * p, const char * n): socket(s, p),
         nick(n){
             for(int i=0; i<9;i++){casillas.push_back(-1);}
             socket.bind();
@@ -71,11 +71,11 @@ public:
 
     void input_thread();
 
-    void isValid(ChatMessage &cmsg, ChatMessage::MessageType &m);
-    ChatMessage::MessageType winner();
+    void isValid(GameMessage &cmsg, GameMessage::MessageType &m);
+    GameMessage::MessageType winner();
     std::string renderGame();
     std::string renderUI();
-    void endGame(ChatMessage::MessageType t);
+    void endGame(GameMessage::MessageType t);
 
     //void closeServer();
 
@@ -100,7 +100,7 @@ private:
     std::vector<int> casillas;
     int contadorTurno = 0;
     bool quit = false;
-    void createMessage(ChatMessage &cmsg);
+    void createMessage(GameMessage &cmsg);
     void reset();
 };
 
@@ -110,7 +110,7 @@ private:
 /**
  *  Clase para el cliente de chat
  */
-class ChatClient
+class T4Client
 {
 public:
     /**
@@ -118,7 +118,7 @@ public:
      * @param p puerto del servidor
      * @param n nick del usuario
      */
-    ChatClient(const char * s, const char * p, const char * n):socket(s, p),
+    T4Client(const char * s, const char * p, const char * n):socket(s, p),
         nick(n){};
 
     /**
